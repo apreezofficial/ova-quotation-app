@@ -1,42 +1,5 @@
 <?php
-// Note: This script assumes you have a 'pricing-config.json' file in the same directory.
-// Example pricing-config.json structure:
-/*
-{
-    "website": {
-        "base": 1500,
-        "types": [
-            {"value": "brochure", "label": "Brochure Site", "description": "Static content, basic forms.", "price": 500},
-            {"value": "e-commerce", "label": "E-Commerce", "description": "Product catalog, shopping cart, payment integration.", "price": 3000},
-            {"value": "custom-web-app", "label": "Custom Web App", "description": "Advanced logic, user accounts, custom databases.", "price": 8000}
-        ],
-        "features": [
-            {"value": "seo", "label": "Advanced SEO Optimization", "description": "Deep keyword analysis and structured data markup.", "price": 400},
-            {"value": "blog", "label": "Integrated Blog / CMS", "description": "Ability to publish and manage articles.", "price": 800},
-            {"value": "multilingual", "label": "Multilingual Support", "description": "Support for 2+ languages.", "price": 1200}
-        ]
-    },
-    "mobile-app": {
-        "base": 5000,
-        "platforms": [
-            {"value": "ios", "label": "iOS Only", "description": "Apple App Store.", "price": 2000},
-            {"value": "android", "label": "Android Only", "description": "Google Play Store.", "price": 1500},
-            {"value": "both", "label": "iOS & Android (Hybrid)", "description": "Both app stores via cross-platform framework.", "price": 4500}
-        ],
-        "core_features": [
-            {"value": "user-auth", "label": "User Authentication (Login/Signup)", "price": 1000},
-            {"value": "push-notifications", "label": "Push Notifications", "price": 750},
-            {"value": "geolocation", "label": "Geolocation / Maps", "price": 1500}
-        ],
-        "features": [
-            {"value": "in-app-purchases", "label": "In-App Purchases / Subscriptions", "description": "Monetization features via app stores.", "price": 2500},
-            {"value": "api-integration", "label": "External API Integration", "description": "Connect to third-party services.", "price": 1800}
-        ]
-    }
-}
-*/
 $pricingConfig = json_decode(file_get_contents('pricing-config.json'), true);
-// Set a default empty array if file reading fails to prevent fatal errors
 if ($pricingConfig === null) {
     $pricingConfig = ['website' => ['base' => 0, 'types' => [], 'features' => []], 'mobile-app' => ['base' => 0, 'platforms' => [], 'core_features' => [], 'features' => []]];
 }
