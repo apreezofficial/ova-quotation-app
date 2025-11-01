@@ -1,32 +1,72 @@
 <?php
-
+// Note: This script assumes you have a 'pricing-config.json' file in the same directory.
+// Example pricing-config.json structure:
+/*
+{
+    "website": {
+        "base": 1500,
+        "types": [
+            {"value": "brochure", "label": "Brochure Site", "description": "Static content, basic forms.", "price": 500},
+            {"value": "e-commerce", "label": "E-Commerce", "description": "Product catalog, shopping cart, payment integration.", "price": 3000},
+            {"value": "custom-web-app", "label": "Custom Web App", "description": "Advanced logic, user accounts, custom databases.", "price": 8000}
+        ],
+        "features": [
+            {"value": "seo", "label": "Advanced SEO Optimization", "description": "Deep keyword analysis and structured data markup.", "price": 400},
+            {"value": "blog", "label": "Integrated Blog / CMS", "description": "Ability to publish and manage articles.", "price": 800},
+            {"value": "multilingual", "label": "Multilingual Support", "description": "Support for 2+ languages.", "price": 1200}
+        ]
+    },
+    "mobile-app": {
+        "base": 5000,
+        "platforms": [
+            {"value": "ios", "label": "iOS Only", "description": "Apple App Store.", "price": 2000},
+            {"value": "android", "label": "Android Only", "description": "Google Play Store.", "price": 1500},
+            {"value": "both", "label": "iOS & Android (Hybrid)", "description": "Both app stores via cross-platform framework.", "price": 4500}
+        ],
+        "core_features": [
+            {"value": "user-auth", "label": "User Authentication (Login/Signup)", "price": 1000},
+            {"value": "push-notifications", "label": "Push Notifications", "price": 750},
+            {"value": "geolocation", "label": "Geolocation / Maps", "price": 1500}
+        ],
+        "features": [
+            {"value": "in-app-purchases", "label": "In-App Purchases / Subscriptions", "description": "Monetization features via app stores.", "price": 2500},
+            {"value": "api-integration", "label": "External API Integration", "description": "Connect to third-party services.", "price": 1800}
+        ]
+    }
+}
+*/
 $pricingConfig = json_decode(file_get_contents('pricing-config.json'), true);
+// Set a default empty array if file reading fails to prevent fatal errors
+if ($pricingConfig === null) {
+    $pricingConfig = ['website' => ['base' => 0, 'types' => [], 'features' => []], 'mobile-app' => ['base' => 0, 'platforms' => [], 'core_features' => [], 'features' => []]];
+}
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
-      <meta charset="UTF-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
+        // --- NEW TAILWIND CONFIGURATION FOR DARK/BLUE THEME ---
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
                         primary: {
-                            light: '#6366f1',  // indigo-500
-                            DEFAULT: '#4f46e5',  // indigo-600
-                            dark: '#4338ca',  // indigo-700
+                            light: '#3399ff', // Lighter Bright Blue
+                            DEFAULT: '#007BFF', // Bright Blue Accent
+                            dark: '#0056b3', // Darker Bright Blue
                         },
                         secondary: {
-                            light: '#8b5cf6',  // violet-500
-                            DEFAULT: '#7c3aed',  // violet-600
-                            dark: '#6d28d9',  // violet-700
+                            light: '#CCCCCC', // Light Grey/Silver for highlights
+                            DEFAULT: '#AAAAAA', // Default Grey/Silver for borders
+                            dark: '#888888', // Darker Grey/Silver
                         },
                         dark: {
-                            DEFAULT: '#1e1b4b',  // indigo-950
-                            light: '#312e81',  // indigo-900
+                            DEFAULT: '#111111', // Very Dark Background Tint (better than black)
+                            light: '#222222', // Lighter Dark Background Tint (for form background)
                         }
                     }
                 }
@@ -35,16 +75,15 @@ $pricingConfig = json_decode(file_get_contents('pricing-config.json'), true);
     </script>
     <title>Project Cost Estimator | Lumia</title>
 </head>
-<body class="bg-black text-gray-100">
-  <?php include"includes/nav.php"; ?>
+<body class="bg-black text-gray-100 min-h-screen">
+    <?php include "includes/nav.php"; // Placeholder for navigation ?>
     <div class="container mx-auto px-4 py-16">
-        <h1 class="text-3xl md:text-4xl font-bold text-center mb-2">Project Cost Estimator</h1>
+        <h1 class="text-3xl md:text-4xl font-bold text-center mb-2 text-white">Project Cost Estimator</h1>
         <p class="text-lg text-gray-400 text-center mb-12 max-w-2xl mx-auto">
             Get an instant estimate for your project. Answer a few questions and we'll calculate the cost.
         </p>
 
-        <form id="estimate-form" action="save-quote.php" method="POST" class="max-w-3xl mx-auto bg-gray-800/50 rounded-xl p-6 md:p-8 border border-gray-700">
-            <!-- Progress tracker -->
+        <form id="estimate-form" action="save-quote.php" method="POST" class="max-w-3xl mx-auto bg-dark-light rounded-xl p-6 md:p-8 border border-gray-700/50 shadow-2xl">
             <div class="mb-8">
                 <div class="flex justify-between mb-2 text-sm text-gray-400">
                     <span>Project Type</span>
@@ -53,25 +92,24 @@ $pricingConfig = json_decode(file_get_contents('pricing-config.json'), true);
                     <span>Contact</span>
                 </div>
                 <div class="w-full bg-gray-700 rounded-full h-2.5">
-                    <div id="progress-bar" class="bg-gradient-to-r from-primary-light to-secondary-light h-2.5 rounded-full" style="width: 25%"></div>
+                    <div id="progress-bar" class="bg-gradient-to-r from-primary-light to-secondary-light h-2.5 rounded-full transition-all duration-500" style="width: 25%"></div>
                 </div>
             </div>
 
-            <!-- Step 1: Project Type -->
             <div id="step-1" class="estimate-step active">
                 <h2 class="text-2xl font-semibold text-white mb-6">What type of project do you need?</h2>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="project-type-option">
                         <input type="radio" name="project_type" id="website" value="website" class="hidden peer" required>
-                        <label for="website" class="block p-6 border border-gray-700 rounded-lg cursor-pointer peer-checked:border-secondary-light peer-checked:bg-gray-700/30 hover:border-gray-600 transition-all">
+                        <label for="website" class="block p-6 border border-gray-700 rounded-lg cursor-pointer peer-checked:border-secondary-light peer-checked:bg-dark-DEFAULT hover:border-secondary transition-all">
                             <div class="flex items-center">
                                 <svg class="w-8 h-8 text-primary-light mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                 </svg>
                                 <div>
                                     <h3 class="text-lg font-medium text-white">Website</h3>
-                                    <p class="text-gray-400 text-sm">From $<?= $pricingConfig['website']['base'] ?>+</p>
+                                    <p class="text-gray-400 text-sm">From $<?= $pricingConfig['website']['base'] ?? '0' ?>+</p>
                                 </div>
                             </div>
                         </label>
@@ -79,20 +117,18 @@ $pricingConfig = json_decode(file_get_contents('pricing-config.json'), true);
                     
                     <div class="project-type-option">
                         <input type="radio" name="project_type" id="mobile-app" value="mobile-app" class="hidden peer" required>
-                        <label for="mobile-app" class="block p-6 border border-gray-700 rounded-lg cursor-pointer peer-checked:border-secondary-light peer-checked:bg-gray-700/30 hover:border-gray-600 transition-all">
+                         <label for="mobile-app" class="block p-6 border border-gray-700 rounded-lg cursor-pointer peer-checked:border-secondary-light peer-checked:bg-dark-DEFAULT hover:border-secondary transition-all">
                             <div class="flex items-center">
                                 <svg class="w-8 h-8 text-primary-light mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
                                 </svg>
                                 <div>
                                     <h3 class="text-lg font-medium text-white">Mobile App</h3>
-                                    <p class="text-gray-400 text-sm">From $<?= $pricingConfig['mobile-app']['base'] ?>+</p>
+                                    <p class="text-gray-400 text-sm">From $<?= $pricingConfig['mobile-app']['base'] ?? '0' ?>+</p>
                                 </div>
                             </div>
                         </label>
                     </div>
-                    
-                    <!-- Add more project types as needed -->
                 </div>
                 
                 <div class="flex justify-end mt-8">
@@ -102,50 +138,45 @@ $pricingConfig = json_decode(file_get_contents('pricing-config.json'), true);
                 </div>
             </div>
 
-            <!-- Step 2: Project Details (Dynamic based on project type) -->
             <div id="step-2" class="estimate-step hidden">
-                <!-- This will be populated by JavaScript based on project type -->
                 <div id="dynamic-step-content"></div>
                 
                 <div class="flex justify-between mt-8">
-                    <button type="button" onclick="prevStep(1)" class="px-6 py-3 border border-gray-600 text-white font-medium rounded-lg hover:bg-gray-700/30 transition-all">
+                    <button type="button" onclick="prevStep(1)" class="px-6 py-3 border border-gray-600 text-white font-medium rounded-lg hover:bg-dark-DEFAULT transition-all">
                         Back
                     </button>
-                    <button type="button" onclick="nextStep(3)" class="px-6 py-3 bg-gradient-to-r from-primary-light to-secondary-light text-white font-medium rounded-lg hover:from-primary-dark hover:to-secondary-dark transition-all">
+                    <button type="button" onclick="nextStep(3)" class="px-6 py-3 bg-gradient-to-r from-primary-light to-primary-DEFAULT text-white font-medium rounded-lg hover:from-primary-dark hover:to-primary-DEFAULT transition-all">
                         Next: Features
                     </button>
                 </div>
             </div>
 
-            <!-- Step 3: Additional Features -->
             <div id="step-3" class="estimate-step hidden">
                 <h2 class="text-2xl font-semibold text-white mb-6">Select additional features</h2>
                 
                 <div id="features-container" class="space-y-4">
-                    <!-- Features will be loaded dynamically based on project type -->
-                </div>
+                    </div>
                 
                 <div class="flex justify-between mt-8">
-                    <button type="button" onclick="prevStep(2)" class="px-6 py-3 border border-gray-600 text-white font-medium rounded-lg hover:bg-gray-700/30 transition-all">
+                    <button type="button" onclick="prevStep(2)" class="px-6 py-3 border border-gray-600 text-white font-medium rounded-lg hover:bg-dark-DEFAULT transition-all">
                         Back
                     </button>
-                    <button type="button" onclick="nextStep(4)" class="px-6 py-3 bg-gradient-to-r from-primary-light to-secondary-light text-white font-medium rounded-lg hover:from-primary-dark hover:to-secondary-dark transition-all">
+                    <button type="button" onclick="nextStep(4)" class="px-6 py-3 bg-gradient-to-r from-primary-light to-primary-DEFAULT text-white font-medium rounded-lg hover:from-primary-dark hover:to-primary-DEFAULT transition-all">
                         Next: Contact Info
                     </button>
                 </div>
             </div>
 
-            <!-- Step 4: Contact Information & Estimate Summary -->
             <div id="step-4" class="estimate-step hidden">
                 <h2 class="text-2xl font-semibold text-white mb-6">Your Project Estimate</h2>
                 
+                <div id="form-status" class="hidden"></div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <!-- Estimate Summary -->
-                    <div class="bg-gray-800/30 border border-gray-700 rounded-lg p-6">
+                    <div class="bg-dark-DEFAULT border border-gray-700 rounded-lg p-6 order-2 md:order-1">
                         <h3 class="text-lg font-medium text-white mb-4">Estimate Summary</h3>
                         <div id="estimate-summary" class="space-y-4">
-                            <!-- Will be populated by JavaScript -->
-                        </div>
+                            </div>
                         <div class="mt-6 pt-4 border-t border-gray-700">
                             <div class="flex justify-between items-center">
                                 <span class="font-medium text-white">Estimated Total:</span>
@@ -155,8 +186,7 @@ $pricingConfig = json_decode(file_get_contents('pricing-config.json'), true);
                         </div>
                     </div>
                     
-                    <!-- Contact Form -->
-                    <div>
+                    <div class="order-1 md:order-2">
                         <div class="space-y-4">
                             <div>
                                 <label for="name" class="block text-sm font-medium text-gray-300 mb-1">Full Name *</label>
@@ -180,12 +210,13 @@ $pricingConfig = json_decode(file_get_contents('pricing-config.json'), true);
                         </div>
                         
                         <div class="flex justify-between mt-8">
-                            <button type="button" onclick="prevStep(3)" class="px-6 py-3 border border-gray-600 text-white font-medium rounded-lg hover:bg-gray-700/30 transition-all">
+                            <button type="button" onclick="prevStep(3)" class="px-6 py-3 border border-gray-600 text-white font-medium rounded-lg hover:bg-dark-DEFAULT transition-all">
                                 Back
                             </button>
-                            <button type="submit" class="px-6 py-3 bg-gradient-to-r from-primary-light to-secondary-light text-white font-medium rounded-lg hover:from-primary-dark hover:to-secondary-dark transition-all flex items-center">
-                                <span>Submit & Get Quote</span>
-                                <svg class="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                             <button id="submit-btn" type="submit" class="px-6 py-3 bg-gradient-to-r from-primary-light to-primary-DEFAULT text-white font-medium rounded-lg hover:from-primary-dark hover:to-primary-DEFAULT transition-all flex items-center">
+                                <span id="btn-spinner" class="hidden w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>
+                                <span id="btn-text">Submit & Get Quote</span>
+                                <svg id="btn-arrow" class="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                                 </svg>
                             </button>
@@ -196,7 +227,7 @@ $pricingConfig = json_decode(file_get_contents('pricing-config.json'), true);
         </form>
     </div>
 <script>
-  // Pricing configuration (loaded from JSON)
+// Pricing configuration (loaded from PHP/JSON)
 const pricingConfig = <?php echo json_encode($pricingConfig); ?>;
 
 // Current estimate data
@@ -208,10 +239,47 @@ let estimateData = {
     calculated_total: 0
 };
 
-// Step navigation
+// --- CORE NAVIGATION FUNCTIONS ---
+
+function prevStep(step) {
+    document.querySelector('.estimate-step.active').classList.add('hidden');
+    document.querySelector('.estimate-step.active').classList.remove('active');
+    document.querySelector(`#step-${step}`).classList.remove('hidden');
+    document.querySelector(`#step-${step}`).classList.add('active');
+    
+    // Update progress bar
+    document.getElementById('progress-bar').style.width = `${step * 25}%`;
+    document.getElementById('form-status').classList.add('hidden'); // Clear status
+}
+
 function nextStep(step) {
-    document.querySelector(`#step-${step-1}`).classList.add('hidden');
-    document.querySelector(`#step-${step-1}`).classList.remove('active');
+    const currentStep = step - 1;
+    const currentStepEl = document.querySelector(`#step-${currentStep}`);
+    
+    // Simple validation for current step
+    if (currentStep === 1) {
+        if (!document.querySelector('input[name="project_type"]:checked')) {
+            alert('Please select a project type.');
+            return;
+        }
+    } else if (currentStep === 2) {
+        const form = document.getElementById('estimate-form');
+        let isValid = true;
+        // Check required fields dynamically loaded in Step 2
+        currentStepEl.querySelectorAll('input[required], select[required]').forEach(input => {
+            if (!input.value || (input.type === 'radio' && !document.querySelector(`input[name="${input.name}"]:checked`))) {
+                isValid = false;
+            }
+        });
+        if (!isValid) {
+            alert('Please complete all required details for your project.');
+            return;
+        }
+    }
+    // Step 3 has no required fields other than the optional checkboxes
+    
+    currentStepEl.classList.add('hidden');
+    currentStepEl.classList.remove('active');
     document.querySelector(`#step-${step}`).classList.remove('hidden');
     document.querySelector(`#step-${step}`).classList.add('active');
     
@@ -223,6 +291,8 @@ function nextStep(step) {
     if (step === 3) loadFeatures();
     if (step === 4) generateEstimateSummary();
 }
+
+// --- DYNAMIC CONTENT LOADING ---
 
 // Load project details based on selected type
 function loadProjectDetails() {
@@ -241,12 +311,12 @@ function loadProjectDetails() {
                         ${pricingConfig.website.types.map(type => `
                             <div class="project-detail-option">
                                 <input type="radio" name="website_type" id="wt-${type.value}" value="${type.value}" 
-                                       data-price="${type.price}" class="hidden peer" required
-                                       onchange="updateEstimateData()">
-                                <label for="wt-${type.value}" class="block p-4 border border-gray-700 rounded-lg cursor-pointer peer-checked:border-secondary-light peer-checked:bg-gray-700/30 hover:border-gray-600 transition-all text-center">
+                                        data-price="${type.price}" class="hidden peer" required
+                                        onchange="updateEstimateData()">
+                                <label for="wt-${type.value}" class="block p-4 border border-gray-700 rounded-lg cursor-pointer peer-checked:border-secondary-light peer-checked:bg-dark-DEFAULT hover:border-secondary transition-all text-center">
                                     <h3 class="text-md font-medium text-white">${type.label}</h3>
                                     <p class="text-gray-400 text-sm mt-1">${type.description}</p>
-                                    <p class="text-primary-light text-sm mt-2">+$${type.price}</p>
+                                    <p class="text-primary-light text-sm mt-2">+$${type.price.toLocaleString()}</p>
                                 </label>
                             </div>
                         `).join('')}
@@ -255,15 +325,19 @@ function loadProjectDetails() {
                 
                 <div>
                     <label class="block text-sm font-medium text-gray-300 mb-2">Number of Pages</label>
-                    <select name="page_count" class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-primary-light focus:border-transparent text-white"
+                    <select name="page_count" required class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-primary-light focus:border-transparent text-white"
                             onchange="updateEstimateData()">
-                        ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(count => `
-                            <option value="${count}" data-base-price="${count * 100}" 
-                                    data-additional="${count > 5 ? (count - 5) * 80 : 0}">
-                                ${count} ${count === 1 ? 'page' : 'pages'} 
-                                ($${count * 100}${count > 5 ? ` + $${(count - 5) * 80}` : ''})
-                            </option>
-                        `).join('')}
+                        ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(count => {
+                            const basePrice = count * 100;
+                            const additional = count > 5 ? (count - 5) * 80 : 0;
+                            return `
+                                <option value="${count}" data-base-price="${basePrice}" 
+                                        data-additional="${additional}">
+                                    ${count} ${count === 1 ? 'page' : 'pages'} 
+                                    (+$${(basePrice + additional).toLocaleString()})
+                                </option>
+                            `;
+                        }).join('')}
                         <option value="10+" data-base-price="1000" data-additional="0">10+ pages (Custom Quote)</option>
                     </select>
                 </div>
@@ -280,12 +354,12 @@ function loadProjectDetails() {
                         ${pricingConfig['mobile-app'].platforms.map(platform => `
                             <div class="project-detail-option">
                                 <input type="radio" name="platform" id="plat-${platform.value}" 
-                                       value="${platform.value}" data-price="${platform.price}"
-                                       class="hidden peer" required onchange="updateEstimateData()">
-                                <label for="plat-${platform.value}" class="block p-4 border border-gray-700 rounded-lg cursor-pointer peer-checked:border-secondary-light peer-checked:bg-gray-700/30 hover:border-gray-600 transition-all text-center">
+                                        value="${platform.value}" data-price="${platform.price}"
+                                        class="hidden peer" required onchange="updateEstimateData()">
+                                <label for="plat-${platform.value}" class="block p-4 border border-gray-700 rounded-lg cursor-pointer peer-checked:border-secondary-light peer-checked:bg-dark-DEFAULT hover:border-secondary transition-all text-center">
                                     <h3 class="text-md font-medium text-white">${platform.label}</h3>
                                     <p class="text-gray-400 text-sm mt-1">${platform.description}</p>
-                                    <p class="text-primary-light text-sm mt-2">+$${platform.price}</p>
+                                    <p class="text-primary-light text-sm mt-2">+$${platform.price.toLocaleString()}</p>
                                 </label>
                             </div>
                         `).join('')}
@@ -298,11 +372,11 @@ function loadProjectDetails() {
                         ${pricingConfig['mobile-app'].core_features.map(feature => `
                             <div class="flex items-center">
                                 <input type="checkbox" name="core_features[]" id="cf-${feature.value}" 
-                                       value="${feature.value}" data-price="${feature.price}"
-                                       class="w-4 h-4 text-primary-light bg-gray-700 border-gray-600 rounded focus:ring-primary-light focus:ring-2"
-                                       onchange="updateEstimateData()">
+                                        value="${feature.value}" data-price="${feature.price}"
+                                        class="w-4 h-4 text-primary-light bg-gray-700 border-gray-600 rounded focus:ring-primary-light focus:ring-2"
+                                        onchange="updateEstimateData()">
                                 <label for="cf-${feature.value}" class="ml-2 text-sm text-gray-300">
-                                    ${feature.label} <span class="text-primary-light text-xs">(+$${feature.price})</span>
+                                    ${feature.label} <span class="text-primary-light text-xs">(+$${feature.price.toLocaleString()})</span>
                                 </label>
                             </div>
                         `).join('')}
@@ -327,13 +401,13 @@ function loadFeatures() {
                 ${pricingConfig.website.features.map(feature => `
                     <div class="flex items-start p-4 border border-gray-700 rounded-lg hover:border-secondary-light transition-all">
                         <input type="checkbox" name="features[]" id="feat-${feature.value}" 
-                               value="${feature.value}" data-price="${feature.price}"
-                               class="mt-1 w-4 h-4 text-primary-light bg-gray-700 border-gray-600 rounded focus:ring-primary-light focus:ring-2"
-                               onchange="updateEstimateData()">
+                                value="${feature.value}" data-price="${feature.price}"
+                                class="mt-1 w-4 h-4 text-primary-light bg-gray-700 border-gray-600 rounded focus:ring-primary-light focus:ring-2"
+                                onchange="updateEstimateData()">
                         <div class="ml-3">
                             <label for="feat-${feature.value}" class="block text-white font-medium">${feature.label}</label>
                             <p class="text-gray-400 text-sm mt-1">${feature.description}</p>
-                            <p class="text-primary-light text-sm mt-2">+$${feature.price}</p>
+                            <p class="text-primary-light text-sm mt-2">+$${feature.price.toLocaleString()}</p>
                         </div>
                     </div>
                 `).join('')}
@@ -345,14 +419,14 @@ function loadFeatures() {
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 ${pricingConfig['mobile-app'].features.map(feature => `
                     <div class="flex items-start p-4 border border-gray-700 rounded-lg hover:border-secondary-light transition-all">
-                        <input type="checkbox" name="features[]" id="feat-${feature.value}" 
-                               value="${feature.value}" data-price="${feature.price}"
-                               class="mt-1 w-4 h-4 text-primary-light bg-gray-700 border-gray-600 rounded focus:ring-primary-light focus:ring-2"
-                               onchange="updateEstimateData()">
+                         <input type="checkbox" name="features[]" id="feat-${feature.value}" 
+                                value="${feature.value}" data-price="${feature.price}"
+                                class="mt-1 w-4 h-4 text-primary-light bg-gray-700 border-gray-600 rounded focus:ring-primary-light focus:ring-2"
+                                onchange="updateEstimateData()">
                         <div class="ml-3">
                             <label for="feat-${feature.value}" class="block text-white font-medium">${feature.label}</label>
                             <p class="text-gray-400 text-sm mt-1">${feature.description}</p>
-                            <p class="text-primary-light text-sm mt-2">+$${feature.price}</p>
+                            <p class="text-primary-light text-sm mt-2">+$${feature.price.toLocaleString()}</p>
                         </div>
                     </div>
                 `).join('')}
@@ -364,22 +438,24 @@ function loadFeatures() {
     updateEstimateData();
 }
 
+// --- ESTIMATE CALCULATION & SUMMARY ---
+
 // Update estimate data as user makes selections
 function updateEstimateData() {
     const projectType = estimateData.project_type;
     if (!projectType) return;
     
-    // Reset calculated total
+    // Reset data
     estimateData.calculated_total = 0;
     estimateData.project_details = {};
     estimateData.features = [];
     
-    // Get base price
+    // 1. Get base price
     const basePrice = pricingConfig[projectType].base;
     estimateData.calculated_total += basePrice;
     estimateData.project_details.base_price = basePrice;
     
-    // Get project type specific details
+    // 2. Project type specific details (from Step 2)
     if (projectType === 'website') {
         // Website type
         const websiteType = document.querySelector('input[name="website_type"]:checked');
@@ -388,6 +464,7 @@ function updateEstimateData() {
             estimateData.calculated_total += typePrice;
             estimateData.project_details.website_type = {
                 value: websiteType.value,
+                label: document.querySelector(`label[for="wt-${websiteType.value}"] h3`).textContent,
                 price: typePrice
             };
         }
@@ -402,8 +479,7 @@ function updateEstimateData() {
             estimateData.calculated_total += basePagePrice + additionalPrice;
             estimateData.project_details.page_count = {
                 value: pageCount.value,
-                base_price: basePagePrice,
-                additional_price: additionalPrice
+                price: basePagePrice + additionalPrice
             };
         }
     } 
@@ -415,6 +491,7 @@ function updateEstimateData() {
             estimateData.calculated_total += platformPrice;
             estimateData.project_details.platform = {
                 value: platform.value,
+                label: document.querySelector(`label[for="plat-${platform.value}"] h3`).textContent,
                 price: platformPrice
             };
         }
@@ -428,13 +505,14 @@ function updateEstimateData() {
             estimateData.calculated_total += featurePrice;
             estimateData.project_details.core_features.push({
                 value: feature.value,
+                label: document.querySelector(`label[for="cf-${feature.value}"]`).firstChild.textContent.trim(),
                 price: featurePrice
             });
         });
     }
     
-    // Additional features
-    const features = document.querySelectorAll('input[name="features[]"]:checked');
+    // 3. Additional features (from Step 3)
+    const features = document.querySelectorAll('#features-container input[name="features[]"]:checked');
     estimateData.features = [];
     
     features.forEach(feature => {
@@ -442,6 +520,7 @@ function updateEstimateData() {
         estimateData.calculated_total += featurePrice;
         estimateData.features.push({
             value: feature.value,
+            label: document.querySelector(`label[for="feat-${feature.value}"]`).textContent.trim(),
             price: featurePrice
         });
     });
@@ -449,23 +528,24 @@ function updateEstimateData() {
     // Update the estimate total display if we're on the summary step
     if (document.getElementById('step-4').classList.contains('active')) {
         document.getElementById('estimate-total').textContent = `$${estimateData.calculated_total.toLocaleString()}`;
+        generateEstimateSummary(); // Re-render summary on change
     }
 }
 
-// Generate the estimate summary
+// Generate the estimate summary HTML
 function generateEstimateSummary() {
     updateEstimateData(); // Ensure we have latest data
     
-    // Format currency
-    const formatCurrency = amount => `$${parseFloat(amount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+    // Helper to format currency
+    const formatCurrency = amount => `$${parseFloat(amount).toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0})}`;
     
     let summaryHtml = '';
     const projectType = estimateData.project_type;
     
     // Base Price
     summaryHtml += `
-        <div class="flex justify-between py-3 border-b border-gray-700">
-            <span class="text-gray-400">Base ${projectType === 'website' ? 'Website' : 'Mobile App'} Development</span>
+        <div class="flex justify-between py-3 border-b border-gray-700/50">
+            <span class="text-gray-400 font-semibold">Base Development Cost</span>
             <span class="text-white">${formatCurrency(pricingConfig[projectType].base)}</span>
         </div>
     `;
@@ -475,19 +555,19 @@ function generateEstimateSummary() {
         // Website Type
         if (estimateData.project_details.website_type) {
             summaryHtml += `
-                <div class="flex justify-between py-3 border-b border-gray-700">
-                    <span class="text-gray-400">${estimateData.project_details.website_type.value.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} Website</span>
+                <div class="flex justify-between py-3 border-b border-gray-700/50">
+                    <span class="text-gray-400">${estimateData.project_details.website_type.label}</span>
                     <span class="text-white">+${formatCurrency(estimateData.project_details.website_type.price)}</span>
                 </div>
             `;
         }
         
         // Page Count
-        if (estimateData.project_details.page_count) {
+        if (estimateData.project_details.page_count && estimateData.project_details.page_count.price > 0) {
             summaryHtml += `
-                <div class="flex justify-between py-3 border-b border-gray-700">
+                <div class="flex justify-between py-3 border-b border-gray-700/50">
                     <span class="text-gray-400">${estimateData.project_details.page_count.value} Pages</span>
-                    <span class="text-white">${formatCurrency(estimateData.project_details.page_count.base_price + estimateData.project_details.page_count.additional_price)}</span>
+                    <span class="text-white">+${formatCurrency(estimateData.project_details.page_count.price)}</span>
                 </div>
             `;
         }
@@ -496,8 +576,8 @@ function generateEstimateSummary() {
         // Platform
         if (estimateData.project_details.platform) {
             summaryHtml += `
-                <div class="flex justify-between py-3 border-b border-gray-700">
-                    <span class="text-gray-400">${estimateData.project_details.platform.value.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} Platform</span>
+                <div class="flex justify-between py-3 border-b border-gray-700/50">
+                    <span class="text-gray-400">Platform: ${estimateData.project_details.platform.label}</span>
                     <span class="text-white">+${formatCurrency(estimateData.project_details.platform.price)}</span>
                 </div>
             `;
@@ -505,12 +585,12 @@ function generateEstimateSummary() {
         
         // Core Features
         if (estimateData.project_details.core_features && estimateData.project_details.core_features.length > 0) {
-            summaryHtml += `<div class="py-3 border-b border-gray-700"><span class="text-gray-400">Core Features:</span></div>`;
+            summaryHtml += `<div class="py-3 border-b border-gray-700/50"><span class="text-gray-400 font-semibold">Core App Features:</span></div>`;
             
             estimateData.project_details.core_features.forEach(feature => {
                 summaryHtml += `
                     <div class="flex justify-between py-2 pl-4">
-                        <span class="text-gray-400">• ${feature.value.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                        <span class="text-gray-400 text-sm">• ${feature.label}</span>
                         <span class="text-white">+${formatCurrency(feature.price)}</span>
                     </div>
                 `;
@@ -520,59 +600,80 @@ function generateEstimateSummary() {
     
     // Additional Features
     if (estimateData.features.length > 0) {
-        summaryHtml += `<div class="py-3 border-b border-gray-700"><span class="text-gray-400">Additional Features:</span></div>`;
+        summaryHtml += `<div class="py-3 border-b border-gray-700/50"><span class="text-gray-400 font-semibold">Optional Features:</span></div>`;
         
         estimateData.features.forEach(feature => {
             summaryHtml += `
                 <div class="flex justify-between py-2 pl-4">
-                    <span class="text-gray-400">• ${feature.value.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                    <span class="text-gray-400 text-sm">• ${feature.label}</span>
                     <span class="text-white">+${formatCurrency(feature.price)}</span>
                 </div>
             `;
         });
     }
     
-    // Total
+    // Final Total
     summaryHtml += `
-        <div class="flex justify-between items-center py-4 mt-4 border-t border-gray-700">
-            <span class="font-medium text-white">Estimated Total:</span>
-            <span id="estimate-total" class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-light to-secondary-light">
-                ${formatCurrency(estimateData.calculated_total)}
-            </span>
+        <div class="mt-6 pt-4 border-t border-primary-light/50">
+            <div class="flex justify-between items-center">
+                <span class="font-medium text-white">Estimated Total:</span>
+                <span id="estimate-total-final" class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-light to-primary-DEFAULT">
+                    ${formatCurrency(estimateData.calculated_total)}
+                </span>
+            </div>
         </div>
     `;
     
     document.getElementById('estimate-summary').innerHTML = summaryHtml;
+    // Update the total outside the summary for the final display
+    document.getElementById('estimate-total').textContent = formatCurrency(estimateData.calculated_total);
 }
 
-// Form submission handler
+// --- FORM SUBMISSION HANDLER ---
+
 document.getElementById('estimate-form').addEventListener('submit', async function(e) {
     e.preventDefault();
     
-    // Get form elements
+    const form = this;
     const submitBtn = document.getElementById('submit-btn');
     const btnText = document.getElementById('btn-text');
     const btnSpinner = document.getElementById('btn-spinner');
-    const formStatus = document.getElementById('form-status');
+    const btnArrow = document.getElementById('btn-arrow');
     
+    // Validate contact info fields
+    let isValid = true;
+    form.querySelectorAll('#step-4 input[required], #step-4 textarea[required]').forEach(input => {
+        if (!input.value) {
+            isValid = false;
+            input.focus();
+        }
+    });
+    if (!isValid) {
+        showFormStatus('Please fill in all required contact fields.', 'bg-red-500/20 text-red-400 border-red-400/30');
+        return;
+    }
+
     // Show loading state
     submitBtn.disabled = true;
     btnText.textContent = 'Sending...';
     btnSpinner.classList.remove('hidden');
-    formStatus.classList.add('hidden');
+    btnArrow.classList.add('hidden');
+    document.getElementById('form-status').classList.add('hidden');
     
     try {
-        // Collect all form data
-        const formData = new FormData(this);
+        // Collect all contact form data
+        const formData = new FormData(form);
         estimateData.contact_info = Object.fromEntries(formData.entries());
         
-        // Add metadata
+        // Add metadata and final total
         estimateData.timestamp = new Date().toISOString();
         estimateData.estimate_id = 'LUM-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+        estimateData.final_price = estimateData.calculated_total; // Record final price
         
         // Submit via AJAX
-        const response = await fetch(this.action, {
+        const response = await fetch(form.action, {
             method: 'POST',
+            // Send everything, including estimate data, as a JSON body
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
@@ -582,25 +683,21 @@ document.getElementById('estimate-form').addEventListener('submit', async functi
         
         const data = await response.json();
         
-        if (!response.ok) {
-            throw new Error(data.message || 'Server responded with an error');
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || 'Server responded with an error during submission.');
         }
         
-        if (data.success) {
-            // Success - redirect to thank you page
-            window.location.href = `thank-you.html?estimate_id=${estimateData.estimate_id}`;
-        } else {
-            // Show error message from server
-            showFormStatus(data.message || 'Submission failed. Please try again.', 'bg-red-500/20 text-red-400 border-red-400/30');
-        }
+        // Success - redirect to thank you page
+        window.location.href = `thank-you.html?estimate_id=${estimateData.estimate_id}`;
     } catch (error) {
         console.error('Submission error:', error);
         showFormStatus(error.message || 'Network error occurred. Please check your connection and try again.', 'bg-red-500/20 text-red-400 border-red-400/30');
     } finally {
         // Reset button state
         submitBtn.disabled = false;
-        btnText.textContent = 'Send Message';
+        btnText.textContent = 'Submit & Get Quote';
         btnSpinner.classList.add('hidden');
+        btnArrow.classList.remove('hidden');
     }
 });
 
@@ -609,9 +706,18 @@ function showFormStatus(message, classes) {
     formStatus.textContent = message;
     formStatus.className = `block mb-6 p-4 rounded-md border ${classes}`;
     formStatus.classList.remove('hidden');
-    formStatus.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    formStatus.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
+
+// Ensure initial estimate data is set when page loads (useful if form state is cached)
+document.addEventListener('DOMContentLoaded', () => {
+    const checkedType = document.querySelector('input[name="project_type"]:checked');
+    if (checkedType) {
+        estimateData.project_type = checkedType.value;
+        updateEstimateData();
+    }
+});
 </script>
-  <?php include"includes/footer.php"; ?>
-    </body>
-    </html>
+    <?php include "includes/footer.php"; // Placeholder for footer ?>
+</body>
+</html>
